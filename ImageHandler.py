@@ -10,25 +10,31 @@ def loadImage(fileName):
         print ('Error opening image!')
     return src
 
-def showCentroids (image, centroids):
-    demo = np.zeros((np.shape(image)), dtype = np.uint8);
+def showLine(image, dSPR, strips, width):
+    image = np.copy(image);
+    (h, w) = np.shape(image);
+    for i in range(strips):
+        minima = -1;
+        y = 0;
+        for j in range(1, h):
+            if dSPR[i][ j] > dSPR[i][j-1] and minima == 0:
+                minima = 1;
+                y = j
+            elif dSPR[i][j] < dSPR[i][j-1]:
+                if minima == 1:
+                    minima = 0;
+                    cv.line(image, (i*width,int ((y + j)/2)), ((i+1)*width if (i+1)*width < w else w, int ((y + j)/2)), (0,0,255), 3, cv.LINE_AA)
+                else:
+                    minima = 0;
+    plt.imshow(image);
+    plt.show()
 
-    if centroids is not None:
-        for centroid in centroids:
-            if centroid[0] != -1 and centroid[1] != -1:
-                demo[int(centroid[1]), int(centroid[0])] = 255
-
-    return demo;
-
-def showLines(lines, DemoImg):
-    for line in lines:
-        rho = line[0]
-        theta = line[1]
-        a = math.cos(theta)
-        b = math.sin(theta)
-        x0 = a * rho
-        y0 = b * rho
-        pt1 = (int(x0 + 1000*(-b)), int(y0 + 1000*(a)))
-        pt2 = (int(x0 - 1000*(-b)), int(y0 - 1000*(a)))
-        cv.line(DemoImg, pt1, pt2, (0,0,255), 3, cv.LINE_AA)
-    plt.imshow(DemoImg);
+def showRegions(image, nRegions, width, w):
+    imageN = np.copy(image);
+    for i in range(len(nRegions)):
+        regionsStrip = nRegions[i];
+        for region in regionsStrip:
+            if (region[2] == 0):
+                cv.line(imageN, (i*width, region[0]), ((i+1)*width if (i+1)*width < w else w,  region[0]), (0,0,255), 3, cv.LINE_AA)
+    plt.imshow(imageN);
+    plt.show()
