@@ -4,36 +4,10 @@ from scipy.stats import norm
 import math
 import numpy as np
 
-from ImageProcessing import *
-
-def applyViterbi(dSPR, strips, pp, width, CCheight, w):
-    regions, m0, m1 = getRegions(dSPR, CCheight);
-    probabilities = [];
-    e0, e1 = getEmission(pp, regions, width, CCheight, w);
-    nRegions = [];
-    for i in range(len(regions)):
-        regionsStrip = regions[i];
-        nRegionsStrip = [];
-        probabilities.append((0.5 * e1, 0.5 * e0));
-        for region in regionsStrip:
-            if region[1] < (CCheight / 5):
-                continue;
-            a00 = math.exp(-region[1]/m0);
-            a11 = math.exp(-region[1]/m1);
-            a01 = 1 - a00;
-            a10 = 1 - a11;
-            curr_Text = max (probabilities[-1][0]*a11*e1, probabilities[-1][1]*a01*e1);
-            curr_Gap = max (probabilities[-1][0]*a10*e0, probabilities[-1][1]*a00*e0);
-            probabilities.append((curr_Text, curr_Gap));
-
-            p = probabilities[-1];
-            if p[0] > p[1]:
-                nRegionsStrip.append([region[0], region[1], 1]);
-            else:
-                nRegionsStrip.append([region[0], region[1], 0]);
-        nRegions.append(nRegionsStrip);
-
-    return nRegions;
+try:
+    from ImageProcessing import *
+except ModuleNotFoundError:
+    from Papvassiliou.ImageProcessing import *
 
 def getEmission(pp, regions, width, CCheight, w):
     e0 = [];
@@ -43,7 +17,7 @@ def getEmission(pp, regions, width, CCheight, w):
         for region in regionsStrip:
             if region[1] < (CCheight / 5):
                 continue;
-            total = (width if (i+1)*width <= w else (w - i*width));
+            total = (width if (i+1)*width <= w else (w - i*width)) * region[1];
             value = np.sum(pp[i][region[0]:region[0] + region[1]]);
             if (value == 0):
                 continue;
@@ -98,3 +72,23 @@ def getWeights(m):
     for i in range(-m,m+1):
         w.append(math.exp(-3 * abs(i)/(m+1)) / denom);
     return w;
+
+def dist(region, regionN):
+    x0 = region[0] + (region[1] / 2)
+    x1 = regionN[0] + (regionN[1] / 2)
+    return abs(x0-x1);
+
+def minimize(x, SPR, regionsStrip, indexl, indexr):
+    t = regionsStrip[indexl] if indexl > 0 else 0 ;
+    b = regionsStrip[indexr] if indexr < len(regionsStrip) else len(SPR);
+    mini = 99999999;
+    pos = -1;
+
+    for i in range(t + 1, b):
+        val = (abs(i - x) + 1) * (SPR[i] + 1);
+        if val < mini:
+            mini = val;
+            pos = i;
+    if (pos == -1):
+        print (t,b)
+    return pos;

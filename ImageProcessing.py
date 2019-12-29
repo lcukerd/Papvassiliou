@@ -4,6 +4,38 @@ from scipy.stats import norm
 import numpy as np
 import cv2 as cv
 
+try:
+    from Processing import *
+except ModuleNotFoundError:
+    from Papvassiliou.Processing import *
+
+def applyViterbi(dSPR, strips, pp, width, CCheight, w):
+    regions, m0, m1 = getRegions(dSPR, CCheight);
+    e0, e1 = getEmission(pp, regions, width, CCheight, w);
+    nRegions = [];
+    for i in range(len(regions)):
+        regionsStrip = regions[i];
+        nRegionsStrip = [];
+        probabilities = [];
+        probabilities.append((0.5 * e1, 0.5 * e0));
+        for region in regionsStrip:
+            a00 = math.exp(-region[1]/m0);
+            a11 = math.exp(-region[1]/m1);
+            a01 = 1 - a00;
+            a10 = 1 - a11;
+            curr_Text = max (probabilities[-1][0]*a11*e1, probabilities[-1][1]*a01*e1);
+            curr_Gap = max (probabilities[-1][0]*a10*e0, probabilities[-1][1]*a00*e0);
+            probabilities.append((curr_Text, curr_Gap));
+
+            p = probabilities[-1];
+            if p[0] > p[1]:
+                nRegionsStrip.append([region[0], region[1], 1]);
+            else:
+                nRegionsStrip.append([region[0], region[1], 0]);
+        nRegions.append(nRegionsStrip);
+
+    return nRegions;
+
 def getRegions(dSPR, CCheight):
     regions = [];
     m0 = [];
@@ -76,3 +108,21 @@ def projectionProfile(image, width, i):
                 sum += 1;
         pp.append(sum);
     return pp;
+
+def performMultiAssociation(regionsStrip, j, regionsStripN, index, SPR):
+    x0 = regionsStrip[j - 1];
+    y0 = minimize(x0, SPR, regionsStripN, index - 1, index + 1);
+
+    if index < len (regionsStripN):
+        regionsStripN[index] = y0;
+    else:
+        regionsStripN.append(y0);
+
+    x1 = regionsStrip[j];
+    y1 = minimize(x1, SPR, regionsStripN, index, index + 1);
+
+    backup = regionsStripN[index + 1:];
+    regionsStripN[index + 1:] = [y1];
+    regionsStripN[index + 2:] = backup;
+
+    return regionsStripN;

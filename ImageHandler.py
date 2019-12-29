@@ -31,10 +31,26 @@ def showLine(image, dSPR, strips, width):
 
 def showRegions(image, nRegions, width, w):
     imageN = np.copy(image);
+    draw = False
     for i in range(len(nRegions)):
         regionsStrip = nRegions[i];
         for region in regionsStrip:
-            if (region[2] == 0):
-                cv.line(imageN, (i*width, region[0]), ((i+1)*width if (i+1)*width < w else w,  region[0]), (0,0,255), 3, cv.LINE_AA)
+            if (region[2] == 0 and draw == True):
+                draw = False;
+                cv.line(imageN, (i*width, region[0] + int (region[1] / 2)), ((i+1)*width if (i+1)*width < w else w,  region[0] + int (region[1] / 2)), (0,0,255), 3, cv.LINE_AA);
+            elif region[2] == 1:
+                draw = True;
+            elif region[2] == 2:
+                cv.line(imageN, (i*width, region[0]), ((i+1)*width if (i+1)*width < w else w,  region[0]), (0,0,255), 3, cv.LINE_AA);
+    plt.imshow(imageN);
+    plt.show()
+
+def showProcessedRegions(image, nRegions, width, w):
+    imageN = np.copy(image);
+    draw = False
+    for i in range(len(nRegions)):
+        regionsStrip = nRegions[i];
+        for region in regionsStrip:
+            cv.line(imageN, (i*width, region), ((i+1)*width if (i+1)*width < w else w,  region), (0,0,255), 3, cv.LINE_AA);
     plt.imshow(imageN);
     plt.show()
