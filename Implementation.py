@@ -90,3 +90,51 @@ def performPapvassiliouSegmentation(file_name):
             else:
                 associateN[index] = 1;
     return lines;
+
+
+image = loadImage('../Dataset/600000107.jpg');
+(h, w) = np.shape(image);
+_, image = cv.threshold(image,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+plt.imshow(image);
+
+width = int (0.05 * w);
+(h, w) = np.shape(image);
+strips = (int (w/width) + (1 if w%width != 0 else 0));
+M = 3;
+
+wt = getWeights(M);
+pp = [];
+for i in range(strips):
+    pp.append(projectionProfile(image, width, i));
+
+delta = getdelta(image, width, strips, pp);
+SPR = [];
+for i in range(strips):
+    SPR.append(getSPR(image, M, i, delta, wt, pp, strips));
+
+dSPR = [];
+CCheight = int (getCCHeight(image) / 2);
+for i in range(strips):
+    dSPR.append(getdiffSPR(SPR[i], image, CCheight));
+showLine(image, dSPR, strips, width);
+
+nRegions = applyViterbi(dSPR, strips, pp, width, CCheight, w)
+
+pRegions = [];
+for regionsStrip in nRegions:
+    pRegionsStrip = [];
+    tempRegion = [];
+    gap = False
+    for region in regionsStrip:
+        if region[2] == 0:
+            if gap:
+                tempRegion[1] += region[1]
+            else:
+                if tempRegion != []:
+                    pRegionsStrip.append(region[0] + int (region[1] / 2));
+                tempRegion = region;
+                gap = True;
+        else:
+            gap = False;
+    pRegions.append (pRegionsStrip);
+textRegions = connectSeparatorsH(pRegions, delta, SPR, h);π

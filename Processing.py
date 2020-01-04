@@ -78,13 +78,13 @@ def dist(region, regionN):
     x1 = regionN[0] + (regionN[1] / 2)
     return abs(x0-x1);
 
-def minimize(x, SPR, regionsStrip, indexl, indexr):
-    t = regionsStrip[indexl] if indexl > 0 else 0 ;
-    b = regionsStrip[indexr] if indexr < len(regionsStrip) else len(SPR);
+def minimize(x, SPR, regionsStrip, indexl, indexr, offset = 1):
+    t = regionsStrip[indexl] if indexl >= 0 else 0 ;
+    b = regionsStrip[indexr] if indexr < len(regionsStrip) else len(SPR) - 1;
     mini = 99999999;
     pos = -1;
 
-    for i in range(t + 1, b):
+    for i in range(t + 1, b + offset):
         val = (abs(i - x) + 1) * (SPR[i] + 1);
         if val < mini:
             mini = val;
@@ -92,3 +92,46 @@ def minimize(x, SPR, regionsStrip, indexl, indexr):
     if (pos == -1):
         print (t,b)
     return pos;
+
+def generateAssociations(pRegions, delta, SPR):
+    for i in range(len(pRegions) - 1):
+        if delta[i] != 1:
+            continue;
+
+        if len(pRegions[i]) == len(pRegions[i+1]):
+            continue;
+
+        pRegionsStrip = pRegions[i];
+        textLines = [];
+        for j in range(len(SPR[i])):
+            if j >= len(pRegionsStrip):
+                break;
+
+            region = pRegionsStrip[j];
+            index = findNextSeparator(region, pRegions[i + 1])
+            if j + 1 < len(pRegionsStrip):
+                indexn = findNextSeparator(pRegionsStrip[j + 1], pRegions[i + 1])
+            else:
+                indexn = -1
+
+            if index > j and indexn != index:
+                for pos in range(j, index):
+                    for ipos in range(i, -1, -1):
+                        y = minimize(pRegions[i + 1][pos], SPR[ipos], pRegions[ipos], pos - 1, pos, 0);
+                        backup = pRegions[ipos][pos:];
+                        pRegions[ipos][pos] = y;
+                        pRegions[ipos][pos + 1:] = backup;
+                        pRegionsStrip = pRegions[i];
+
+def findNextSeparator(region, regionsStripN):
+    pos = 0;
+    while pos + 1 < len(regionsStripN) and abs(region - regionsStripN[pos]) > abs(region - regionsStripN[pos + 1]):
+        pos += 1;
+
+    return pos;
+
+def findPreviousSeparator(regionsStrip, index, regionsStripP):
+    for i in range(len(regionsStripP)):
+        if index == findNextSeparator(regionsStripP[i], regionsStrip):
+            return i;
+    return -2;

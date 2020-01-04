@@ -54,3 +54,27 @@ def showProcessedRegions(image, nRegions, width, w):
             cv.line(imageN, (i*width, region), ((i+1)*width if (i+1)*width < w else w,  region), (0,0,255), 3, cv.LINE_AA);
     plt.imshow(imageN);
     plt.show()
+
+def showCC(stats, image):
+    image = np.copy(image);
+    edgyImg = cv.Canny(image, 50, 200, None, 3)
+    edgyColor = cv.cvtColor(edgyImg, cv.COLOR_GRAY2BGR)
+    DemoImg = np.zeros_like(edgyColor);
+
+    for stat in stats:
+        pt1 = (stat[0]          , stat[1]          )
+        pt2 = (stat[0] + stat[2], stat[1]          )
+        pt3 = (stat[0] + stat[2], stat[1] + stat[3])
+        pt4 = (stat[0]          , stat[1] + stat[3])
+        cv.line(image, pt1, pt2, (0,0,255), 1, cv.LINE_AA)
+        cv.line(image, pt2, pt3, (0,0,255), 1, cv.LINE_AA)
+        cv.line(image, pt3, pt4, (0,0,255), 1, cv.LINE_AA)
+        cv.line(image, pt4, pt1, (0,0,255), 1, cv.LINE_AA)
+        cv.line(DemoImg, pt1, pt2, (0,0,255), 1, cv.LINE_AA)
+        cv.line(DemoImg, pt2, pt3, (0,0,255), 1, cv.LINE_AA)
+        cv.line(DemoImg, pt3, pt4, (0,0,255), 1, cv.LINE_AA)
+        cv.line(DemoImg, pt4, pt1, (0,0,255), 1, cv.LINE_AA)
+    plt.imshow(DemoImg);
+    plt.show();
+    plt.imshow(image);
+    plt.show();

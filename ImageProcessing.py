@@ -23,8 +23,12 @@ def applyViterbi(dSPR, strips, pp, width, CCheight, w):
             a11 = math.exp(-region[1]/m1);
             a01 = 1 - a00;
             a10 = 1 - a11;
-            curr_Text = max (probabilities[-1][0]*a11*e1, probabilities[-1][1]*a01*e1);
-            curr_Gap = max (probabilities[-1][0]*a10*e0, probabilities[-1][1]*a00*e0);
+            if region[2] == 1:
+                curr_Text = max (probabilities[-1][0]*a11*e1, probabilities[-1][1]*a01*e1);
+                curr_Gap = max (probabilities[-1][0]*a10*e1, probabilities[-1][1]*a00*e1);
+            else:
+                curr_Text = max (probabilities[-1][0]*a11*e0, probabilities[-1][1]*a01*e0);
+                curr_Gap = max (probabilities[-1][0]*a10*e0, probabilities[-1][1]*a00*e0);
             probabilities.append((curr_Text, curr_Gap));
 
             p = probabilities[-1];
@@ -76,15 +80,21 @@ def getRegions(dSPR, CCheight):
 
     return regions, mean(m0), mean(m1);
 
-def getCCHeight(image):
-    edgyImg = cv.Canny(image, 50, 200, None, 3)
+def getCC(image):
+    edgyImg = cv.Canny(image, 100, 200, None, 3)
     edgyColor = cv.cvtColor(edgyImg, cv.COLOR_GRAY2BGR)
     num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(edgyImg);
+
+    return labels, stats, centroids;
+
+
+def getCCHeight(image):
+    _, stats, _ = getCC(image)
 
     avg_height = 0;
     for stat in stats:
         avg_height += stat[cv.CC_STAT_HEIGHT]
-    avg_height /= num_labels
+    avg_height /= len(stats)
     if floor(avg_height) % 2 == 1:
         return floor(avg_height);
     else:
@@ -111,12 +121,9 @@ def projectionProfile(image, width, i):
 
 def performMultiAssociation(regionsStrip, j, regionsStripN, index, SPR):
     x0 = regionsStrip[j - 1];
-    y0 = minimize(x0, SPR, regionsStripN, index - 1, index + 1);
+    y0 = minimize(x0, SPR, regionsStripN, index - 1, index);
 
-    if index < len (regionsStripN):
-        regionsStripN[index] = y0;
-    else:
-        regionsStripN.append(y0);
+    regionsStripN[index] = y0;
 
     x1 = regionsStrip[j];
     y1 = minimize(x1, SPR, regionsStripN, index, index + 1);
@@ -126,3 +133,33 @@ def performMultiAssociation(regionsStrip, j, regionsStripN, index, SPR):
     regionsStripN[index + 2:] = backup;
 
     return regionsStripN;
+
+def connectSeparators(pRegions, delta, SPR, h):
+    associateN = np.ones((h)) * -1;
+    for i in range(len (pRegions)):
+        regionsStrip = pRegions[i];
+        index = 0;
+
+        if delta[i] == 0:
+            continue;
+        if i + 1 < len (pRegions):
+            regionsStripN = pRegions[i + 1];
+        else:
+            regionsStripN = -1;
+
+        associateT = np.copy(associateN);
+        associateN = np.ones((h)) * -1;
+        for j in range(len(regionsStrip)):
+            region = regionsStrip[j];
+            if regionsStripN == -1:
+                continue;
+
+            index = findNextSeparator(regionsStrip[j], regionsStripN);
+
+            if associateN[index] == 1:
+                regionsStripN = performMultiAssociation(regionsStrip, j, regionsStripN, index, SPR[i + 1]);
+                associateN[index + 1] = 1;
+                index += 1;
+            else:
+                associateN[index] = 1;
+    generateAssociations(pRegions, delta, SPR)
