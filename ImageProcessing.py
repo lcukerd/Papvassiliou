@@ -123,14 +123,20 @@ def performMultiAssociation(regionsStrip, j, regionsStripN, index, SPR):
     x0 = regionsStrip[j - 1];
     y0 = minimize(x0, SPR, regionsStripN, index - 1, index);
 
-    regionsStripN[index] = y0;
+    if (index < len(regionsStripN)):
+        regionsStripN[index] = y0;
+    else:
+        regionsStripN.append(y0);
 
     x1 = regionsStrip[j];
     y1 = minimize(x1, SPR, regionsStripN, index, index + 1);
 
     backup = regionsStripN[index + 1:];
-    regionsStripN[index + 1:] = [y1];
-    regionsStripN[index + 2:] = backup;
+    if len(backup) == 0:
+        regionsStripN.append(y1);
+    else:
+        regionsStripN[index + 1:] = [y1];
+        regionsStripN[index + 2:] = backup;
 
     return regionsStripN;
 

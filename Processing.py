@@ -79,8 +79,19 @@ def dist(region, regionN):
     return abs(x0-x1);
 
 def minimize(x, SPR, regionsStrip, indexl, indexr, offset = 1):
-    t = regionsStrip[indexl] if indexl >= 0 else 0 ;
-    b = regionsStrip[indexr] if indexr < len(regionsStrip) else len(SPR) - 1;
+    if indexl < 0 :
+        t = 0;
+    elif indexl >= len(regionsStrip):
+        t = regionsStrip[-1]
+    else:
+        t = regionsStrip[indexl]
+
+    if indexr < 0 :
+        b = 0;
+    elif indexr >= len(regionsStrip):
+        b = len(SPR) - 1
+    else:
+        b = regionsStrip[indexr]
     mini = 99999999;
     pos = -1;
 
@@ -89,8 +100,8 @@ def minimize(x, SPR, regionsStrip, indexl, indexr, offset = 1):
         if val < mini:
             mini = val;
             pos = i;
-    if (pos == -1):
-        print (t,b)
+    # if (pos == -1):
+    #     print (t,b)
     return pos;
 
 def generateAssociations(pRegions, delta, SPR):
@@ -119,9 +130,13 @@ def generateAssociations(pRegions, delta, SPR):
                     for ipos in range(i, -1, -1):
                         y = minimize(pRegions[i + 1][pos], SPR[ipos], pRegions[ipos], pos - 1, pos, 0);
                         backup = pRegions[ipos][pos:];
-                        pRegions[ipos][pos] = y;
-                        pRegions[ipos][pos + 1:] = backup;
+                        if len(backup) != 0:
+                            pRegions[ipos][pos] = y;
+                            pRegions[ipos][pos + 1:] = backup;
+                        else:
+                            pRegions[ipos].append(y);
                         pRegionsStrip = pRegions[i];
+
 
 def findNextSeparator(region, regionsStripN):
     pos = 0;
@@ -135,3 +150,17 @@ def findPreviousSeparator(regionsStrip, index, regionsStripP):
         if index == findNextSeparator(regionsStripP[i], regionsStrip):
             return i;
     return -2;
+
+def getLineinRange(regionsStrip, top, bottom):
+    lines = [];
+    for region in regionsStrip:
+        if region > top and region < bottom:
+            lines.append(region);
+    return lines;
+
+def checkDuplicacy(chosenLinesStrip, lines):
+    unique = [];
+    for line in lines:
+        if line not in chosenLinesStrip:
+            unique.append(line);
+    return unique;
