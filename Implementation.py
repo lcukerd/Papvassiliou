@@ -12,7 +12,7 @@ except ModuleNotFoundError:
     from Papvassiliou.ImageProcessing import *
     from Papvassiliou.Processing import *
 
-def performPapvassiliouSegmentation(file_name):
+def performPapvassiliouSegmentation(file_name, count, again):
     image = loadImage(file_name);
     (h, w) = np.shape(image);
     _, image = cv.threshold(image,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
@@ -78,13 +78,18 @@ def performPapvassiliouSegmentation(file_name):
             if (len (stat) == 0):
                 break;
             lines = getLineinRange(pRegions[i], stat[1], stat[1] + stat[3]);
-            th75 = stat[1] + (0.75 * stat[3]);
-            lines = [line for line in lines if line > th75];
+            if again == False:
+                th75 = stat[1] + (0.75 * stat[3]);
+                lines = [line for line in lines if line > th75];
             lines = checkDuplicacy(chosenLinesStrip, lines);
             if len(lines) > 1:
                 lines = [lines[0]]
-    #             lines = extendZone(image, pRegions, i, stats, stat[1], stat[1] + stat[3], lines);
             chosenLinesStrip.extend(lines);
         chosenLines.append(chosenLinesStrip);
 
-    return max([len(strip) for strip in chosenLines]);
+    countPap = max([len(strip) for strip in chosenLines]);
+
+    if again == True or (countPap <= count + 5 and countPap >= count - 5):
+        return countPap;
+    else:
+        return performPapvassiliouSegmentation(file_name, count, True)
